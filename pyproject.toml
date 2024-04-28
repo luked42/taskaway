@@ -11,13 +11,14 @@ authors = []
 [tool.poetry.dependencies]
 python = "^3.9"
 textual = "^0.56"
+tasklib = "^2.5"
 
 [tool.poetry.dev-dependencies]
 mypy = "^0.910"
 flake8 = "^4.0.1"
 
 [tool.poetry.scripts]
-timetasker = "taskaway.main:main_func"
+taskaway = "taskaway.main:start_application"
 
 [tool.black]
 line-length = 120
