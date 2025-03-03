@@ -4,13 +4,13 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "taskaway"
-version = "0.1.0"
+version = "0.2.0"
 description = ""
 authors = []
 
 [tool.poetry.dependencies]
 python = "^3.9"
-textual = "^0.56"
+textual = "^2.0"
 tasklib = "^2.5"
 
 [tool.poetry.dev-dependencies]

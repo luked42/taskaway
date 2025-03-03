@@ -1,0 +1,28 @@
+InputCommandScreen {
+    align: center bottom;
+}
+
+#dialog {
+    grid-size: 2 1;
+    grid-gutter: 0 0;
+    padding: 0 0;
+    grid-columns: auto 100%;
+    width: 100%;
+    height: 1;
+    background: $surface;
+}
+
+#command {
+    align-vertical: middle;
+    text-align: left;
+    padding: 0 0;
+    border: none;
+    background: $surface-darken-1 50%;
+}
+
+#input {
+    width: 100%;
+    content-align: left top;
+    border: none;
+    background: $surface;
+}
