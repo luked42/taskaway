@@ -231,7 +231,8 @@ class MainWindow(App):
 
         task_uuid: str = row[uuid_column_idx]
         task: Task = self.tw.get_task(task_uuid)
-        self.tw.delete_task(task)
+        task.done()
+        task.save()
         table.action_cursor_up()
         row_key, _ = table.coordinate_to_cell_key(table.cursor_coordinate)
         self.redraw()
