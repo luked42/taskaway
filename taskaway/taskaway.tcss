@@ -1,3 +1,11 @@
+ColumnLayoutScreen {
+    align: center middle;
+}
+
+ConfirmationScreen {
+    align: center bottom;
+}
+
 InputCommandScreen {
     align: center bottom;
 }
