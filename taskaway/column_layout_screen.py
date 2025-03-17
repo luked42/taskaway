@@ -3,7 +3,7 @@ from textual.widgets import SelectionList, Label
 from textual.screen import ModalScreen
 from textual.app import App, ComposeResult
 from typing import Optional, ClassVar
-from taskaway_types import ColumnDefinitions
+from taskaway.taskaway_types import ColumnDefinitions
 from textual.binding import Binding, BindingType
 
 

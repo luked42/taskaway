@@ -3,7 +3,7 @@ from tasklib import Task
 from datetime import datetime, timezone
 from typing import Optional
 
-from constants import (
+from taskaway.constants import (
     COL_ACTIVE,
     COL_ACTIVE_HIDDEN,
     COL_AGE,
@@ -104,7 +104,7 @@ def get_column_value_for_task(task: Task, column_name: str) -> str:
     elif column_name == COL_UUID or column_name == COL_UUID_HIDDEN:
         return task[TASK_UUID]
     elif column_name == COL_ANNOTATIONS:
-        return "\n".join(f"{x['entry'].strftime("%Y-%m-%d")}: {x['description']}" for x in task[TASK_ANNOTATIONS])
+        return "\n".join(f"{x['entry'].strftime('%Y-%m-%d')}: {x['description']}" for x in task[TASK_ANNOTATIONS])
     elif column_name == COL_ACTIVE:
         started: Optional[datetime] = task[TASK_STARTED]
         return get_time_representation(started - datetime.now(tz=timezone.utc)) if started else None

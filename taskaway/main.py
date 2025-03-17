@@ -1,16 +1,20 @@
+import argparse
+import shutil
+from pathlib import Path
 from os import system
 from tasklib import TaskWarrior, Task
+from tasklib.backends import TaskWarriorException
 from textual import work
 from textual.css.query import NoMatches
 from textual.app import App, ComposeResult
 from textual.containers import Grid
-from textual.widgets import DataTable, Input, Label, RadioSet, RadioButton, HelpPanel
+from textual.widgets import DataTable, Input, Label, HelpPanel, Pretty, Header, Footer
 from textual.widgets._data_table import RowDoesNotExist, CellDoesNotExist, RowKey
 from textual.binding import Binding, BindingType
 from textual.screen import ModalScreen
-from column_layout_screen import ColumnLayoutScreen
+from taskaway.column_layout_screen import ColumnLayoutScreen
 from typing import Optional, ClassVar
-from constants import (
+from taskaway.constants import (
     COL_ACTIVE_HIDDEN,
     COL_ANNOTATIONS,
     COL_FULL_PROJECT_HIDDEN,
@@ -22,25 +26,23 @@ from constants import (
     TASK_TABLE_ID,
     TASK_TAGS,
 )
-from utils import get_all_projects_from_tasks, get_parent_project, get_column_value_for_task
-from taskaway_types import Config
+from taskaway.utils import get_all_projects_from_tasks, get_parent_project, get_column_value_for_task
+from taskaway.taskaway_types import Config, HelpCommand
 
 
-class ColumnSelectScreen(ModalScreen):
-    BINDINGS: ClassVar[list[BindingType]] = [
-        Binding("escape", "return", "Exit without any action", show=True),
-    ]
-
-    def __init__(self) -> None:
+class ErrorMessageScreen(ModalScreen):
+    def __init__(self, error_msg: str) -> None:
+        self.error_msg: str = error_msg
         super().__init__()
 
     def compose(self) -> ComposeResult:
-        with RadioSet(id="column_radio_set"):
-            yield RadioButton("test1")
-            yield RadioButton("test2")
+        yield Grid(
+            Pretty(self.error_msg),
+            Label("Press any key to continue...", id="error_message"),
+        )
 
-    def action_return(self) -> None:
-        self.dismiss("")
+    def on_key(self) -> None:
+        self.dismiss()
 
 
 class ConfirmationScreen(ModalScreen[bool]):
@@ -101,12 +103,30 @@ class InputCommandScreen(ModalScreen):
         self.dismiss(description_input)
 
 
+class HelpScreen(ModalScreen):
+    def __init__(self, help_commands: list[HelpCommand]) -> None:
+        self.help_commands: list[HelpCommand] = help_commands
+        super().__init__()
+
+    def compose(self) -> ComposeResult:
+        yield Grid(
+            Header("Help Page")
+            DataTable(),
+            Footer()
+        )
+
+    def on_key(self) -> None:
+        self.dismiss()
+
+
 class MainWindow(App):
     CSS_PATH = "taskaway.tcss"
     HELP = "hello world"
     BINDINGS: ClassVar[list[BindingType]] = [
         Binding("k", "cursor_up", "Cursor up", show=True),
         Binding("j", "cursor_down", "Cursor down", show=True),
+        Binding("g", "cursor_top", "Cursor top", show=True),
+        Binding("G", "cursor_bottom", "Cursor bottom", show=True),
         Binding("l", "configure_column_layout", "Configure column layout", show=True),
         Binding("escape", "clear_filters", "Clear filters", show=True),
         Binding("d", "mark_task_complete", "Mark task complete", show=True),
@@ -124,10 +144,10 @@ class MainWindow(App):
         Binding("h", "toggle_help", "Toggle help", show=True),
     ]
 
-    def __init__(self) -> None:
-        self.tw = TaskWarrior("~/.task")
-        self.config_file: str = "~/.taskaway.json"
-        self.config: Config = Config.load_from_json(self.config_file)
+    def __init__(self, task_config: Path, taskaway_config: Path, task_command: str) -> None:
+        self.tw = TaskWarrior(task_command=task_command, taskrc_location=task_config)
+        self.taskaway_config: Path = taskaway_config
+        self.config: Config = Config.load_from_json(taskaway_config=self.taskaway_config)
         self.update_project_filter("")
         self.update_tag_filter(tag_filter="")
         super().__init__()
@@ -224,11 +244,19 @@ class MainWindow(App):
         table = self.get_table()
         table.action_cursor_down()
 
+    def action_cursor_top(self) -> None:
+        table = self.get_table()
+        table.action_scroll_top()
+
+    def action_cursor_bottom(self) -> None:
+        table = self.get_table()
+        table.action_scroll_bottom()
+
     @work
     async def action_configure_column_layout(self) -> None:
         column_layout = await self.push_screen_wait(ColumnLayoutScreen(self.config.column_layout))
         self.config.column_layout = column_layout
-        self.config.save_to_json(self.config_file)
+        self.config.save_to_json()
         self.call_after_refresh(self.redraw)
 
     @work
@@ -323,7 +351,10 @@ class MainWindow(App):
         if add_command == "":
             return
 
-        self.tw.execute_command(["add"] + add_command.split(" "))
+        try:
+            self.tw.execute_command(["add"] + add_command.split(" "))
+        except TaskWarriorException as twe:
+            await self.push_screen_wait(ErrorMessageScreen(error_msg=twe))
         self.call_after_refresh(self.redraw)
 
     @work
@@ -436,7 +467,7 @@ class MainWindow(App):
             return
 
         self.config.theme = self.theme
-        self.config.save_to_json(self.config_file)
+        self.config.save_to_json()
 
     def action_change_theme(self) -> None:
         self.search_themes()
@@ -565,7 +596,27 @@ class MainWindow(App):
 
 
 def start_application() -> None:
-    app = MainWindow()
+    parser = argparse.ArgumentParser(
+        prog="taskaway",
+        description="terminal user interface for task warrior",
+    )
+    parser.add_argument("--task_config", required=False, default="~/.task", help="path for task config file to use")
+    parser.add_argument(
+        "--taskaway_config", required=False, default="~/.taskaway.json", help="path for taskaway config file to use"
+    )
+    parser.add_argument("--task_command", required=False, default="task", help="command to run task warrior task")
+
+    args = parser.parse_args()
+    task_command: str = args.task_command
+    if shutil.which(task_command) is None:
+        print(
+            f"The task command '{task_command}' does not exist. Install task warrior following https://taskwarrior.org/download/#quick-setup."
+        )
+        exit(1)
+
+    app = MainWindow(
+        task_config=Path(args.task_config), taskaway_config=Path(args.taskaway_config), task_command=task_command
+    )
     app.run()
 
 
