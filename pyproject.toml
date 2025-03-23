@@ -8,8 +8,8 @@ ignore_missing_imports = true
 
 [tool.poetry]
 name = "taskaway"
-version = "0.3.3"
-description = ""
+version = "0.3.4"
+description = "A terminal user interface for TaskWarrior"
 authors = []
 
 [tool.poetry.dependencies]
@@ -21,6 +21,8 @@ tasklib = "^2.5"
 mypy = "^1.15"
 flake8 = "^7.1"
 black = "^25.1"
+pre-commit = "^3.6.0"
+pytest = "^8.0.0"
 
 [tool.poetry.scripts]
 taskaway = "taskaway.main:start_application"
