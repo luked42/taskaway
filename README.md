@@ -1,11 +1,6 @@
 # TaskAway
-
-[![Python Version](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![release](https://img.shields.io/github/v/release/TaskMore/TaskAway)](https://github.com/TaskMore/TaskAway/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Checked with mypy](https://img.shields.io/badge/mypy-checked-blue.svg)](https://github.com/python/mypy)
-[![Checked with flake8](https://img.shields.io/badge/flake8-checked-blue.svg)](https://github.com/pycqa/flake8)
-[![CI](https://github.com/luked42/taskaway/actions/workflows/ci.yml/badge.svg)](https://github.com/luked42/taskaway/actions/workflows/ci.yml)
 
 TaskAway is a terminal user interface for TaskWarrior, providing an intuitive and efficient way to manage your tasks. It offers a modern, keyboard-driven interface with features like:
 
