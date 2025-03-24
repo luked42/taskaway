@@ -5,7 +5,7 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Checked with mypy](https://img.shields.io/badge/mypy-checked-blue.svg)](https://github.com/python/mypy)
 [![Checked with flake8](https://img.shields.io/badge/flake8-checked-blue.svg)](https://github.com/pycqa/flake8)
-[![CI](https://github.com/yourusername/taskaway/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/taskaway/actions/workflows/ci.yml)
+[![CI](https://github.com/luked42/taskaway/actions/workflows/ci.yml/badge.svg)](https://github.com/luked42/taskaway/actions/workflows/ci.yml)
 
 TaskAway is a terminal user interface for TaskWarrior, providing an intuitive and efficient way to manage your tasks. It offers a modern, keyboard-driven interface with features like:
 
@@ -27,7 +27,7 @@ poetry add taskaway
 Or clone the repository and install in development mode:
 
 ```bash
-git clone https://github.com/yourusername/taskaway.git
+git clone https://github.com/luked42/taskaway.git
 cd taskaway
 poetry install
 ```
@@ -78,7 +78,7 @@ taskaway
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/taskaway.git
+git clone https://github.com/luked42/taskaway.git
 cd taskaway
 ```
 
@@ -139,7 +139,7 @@ Please make sure to update tests as appropriate and ensure all checks pass befor
 
 ### Features to add
 * collapse / expand all
-* Reporting pages for task finished including start and finish dates 
+* Reporting pages for task finished including start and finish dates
 * Tidy code
 * save layout "-c" to specify config file
 * Add context support

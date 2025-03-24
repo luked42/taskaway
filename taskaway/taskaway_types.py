@@ -1,7 +1,7 @@
 import json
 from taskaway.constants import ALL_VISIBLE_COLUMNS, DEFAULT_VISIBLE_COLUMNS
 from pathlib import Path
-from dataclasses import dataclass
+from textual.binding import Binding
 
 ColumnDefinitions = list[tuple[str, bool]]
 
@@ -67,8 +67,7 @@ class Config:
         return f"Config(column_layout={self.column_layout}, theme={self.theme})"
 
 
-@dataclass(frozen=True)
-class HelpCommand:
-    theme: str
-    key: str
-    description: str
+class TaskAwayBinding(Binding):
+    def __init__(self, category: str, key: str, action: str, description: str) -> None:
+        self.category: str = category
+        super().__init__(key, action, description, show=False)

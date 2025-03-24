@@ -8,7 +8,7 @@ from textual import work
 from textual.css.query import NoMatches
 from textual.app import App, ComposeResult
 from textual.containers import Grid
-from textual.widgets import DataTable, Input, Label, HelpPanel, Pretty, Header, Footer
+from textual.widgets import DataTable, Input, Label, Pretty
 from textual.widgets._data_table import RowDoesNotExist, CellDoesNotExist, RowKey
 from textual.binding import Binding, BindingType
 from textual.screen import ModalScreen
@@ -22,17 +22,16 @@ from taskaway.constants import (
     COL_DESCRIPTION_HIDDEN,
     COL_TAGS,
     COL_UUID_HIDDEN,
+    HELP_TABLE_ID,
     TASK_PROJECT,
     TASK_TABLE_ID,
     TASK_TAGS,
 )
 from taskaway.utils import get_all_projects_from_tasks, get_parent_project, get_column_value_for_task
-from taskaway.taskaway_types import Config, HelpCommand
+from taskaway.taskaway_types import Config, TaskAwayBinding
 
 
 class ErrorMessageScreen(ModalScreen):
-    """A modal screen for displaying error messages."""
-
     def __init__(self, error_msg: str) -> None:
         self.error_msg: str = error_msg
         super().__init__()
@@ -48,8 +47,6 @@ class ErrorMessageScreen(ModalScreen):
 
 
 class ConfirmationScreen(ModalScreen[bool]):
-    """A modal screen for user confirmations."""
-
     BINDINGS: ClassVar[list[BindingType]] = [
         Binding("escape", "return", "Exit without any action", show=True),
     ]
@@ -71,6 +68,7 @@ class ConfirmationScreen(ModalScreen[bool]):
             self.dismiss(True)
         elif input_result == "n":
             self.dismiss(False)
+
         self.dismiss(False)
 
     def action_return(self) -> None:
@@ -78,8 +76,6 @@ class ConfirmationScreen(ModalScreen[bool]):
 
 
 class InputCommandScreen(ModalScreen):
-    """A modal screen for inputting commands."""
-
     BINDINGS: ClassVar[list[BindingType]] = [
         Binding("escape", "return", "Exit without any action", show=True),
     ]
@@ -109,58 +105,73 @@ class InputCommandScreen(ModalScreen):
 
 
 class HelpScreen(ModalScreen):
-    """A modal screen for displaying help information."""
+    BINDINGS: ClassVar[list[BindingType]] = [
+        Binding("escape", "return", "Exit help screen", show=False),
+        Binding("h", "return", "Exit help screen", show=False),
+        Binding("q", "retun", "Quit and save"),
+        Binding("j", "cursor_down", "Cursor down"),
+        Binding("k", "cursor_up", "Cursor up"),
+    ]
 
-    def __init__(self, help_commands: list[HelpCommand]) -> None:
-        self.help_commands: list[HelpCommand] = help_commands
+    def __init__(self, help_commands: list[TaskAwayBinding]) -> None:
+        self.help_commands: list[TaskAwayBinding] = help_commands
         super().__init__()
 
     def compose(self) -> ComposeResult:
-        yield Grid(Header("Help Page"), DataTable(), Footer())
+        yield Grid(DataTable(id=HELP_TABLE_ID))
 
-    def on_key(self) -> None:
+    def on_mount(self) -> None:
+        table = self.query_one(DataTable)
+        table.add_column("Category", key="category")
+        table.add_column("Command", key="command")
+        table.add_column("Description", key="description")
+        for help_command in self.help_commands:
+            table.add_row(help_command.category, help_command.key, help_command.description)
+
+        table.cursor_type = "row"
+        table.zebra_stripes = True
+
+    def get_table(self) -> DataTable:
+        return self.query_one(f"#{HELP_TABLE_ID}")
+
+    def action_return(self) -> None:
         self.dismiss()
+
+    def action_cursor_down(self) -> None:
+        table = self.get_table()
+        table.action_cursor_down()
+
+    def action_cursor_up(self) -> None:
+        table = self.get_table()
+        table.action_cursor_up()
 
 
 class MainWindow(App):
-    """Main application window for TaskAway.
-
-    This class handles the main UI and interaction with TaskWarrior.
-    It provides functionality for viewing, adding, modifying, and filtering tasks.
-    """
-
     CSS_PATH = "taskaway.tcss"
     HELP = "hello world"
-    BINDINGS: ClassVar[list[BindingType]] = [
-        Binding("k", "cursor_up", "Cursor up", show=True),
-        Binding("j", "cursor_down", "Cursor down", show=True),
-        Binding("g", "cursor_top", "Cursor top", show=True),
-        Binding("G", "cursor_bottom", "Cursor bottom", show=True),
-        Binding("l", "configure_column_layout", "Configure column layout", show=True),
-        Binding("escape", "clear_filters", "Clear filters", show=True),
-        Binding("d", "mark_task_complete", "Mark task complete", show=True),
-        Binding("t", "add_tag", "Add tag to task", show=True),
-        Binding("a", "add_task", "Add task", show=True),
-        Binding("A", "add_annotation", "Add annotation", show=True),
-        Binding("p", "modify_project", "Modify project", show=True),
-        Binding("m", "modify_task", "Modify task", show=True),
-        Binding("P", "filter_project", "Filter for highlighted project", show=True),
-        Binding("T", "filter_tag", "Filter for highlighted tags", show=True),
-        Binding("q", "quit", "Quit and save", show=True),
-        Binding("ctrl+t", "change_theme", "Change theme", show=True),
-        Binding("e", "edit_task", "Edit task", show=True),
-        Binding("b", "toggle_start_stop", "Toggle start stop", show=True),
-        Binding("h", "toggle_help", "Toggle help", show=True),
+    BINDINGS: ClassVar[list[TaskAwayBinding]] = [
+        TaskAwayBinding("Application", "h", "toggle_help", "Toggle help"),
+        TaskAwayBinding("Application", "l", "configure_column_layout", "Configure column layout"),
+        TaskAwayBinding("Application", "q", "quit", "Quit and save"),
+        TaskAwayBinding("Application", "ctrl+t", "change_theme", "Change theme"),
+        TaskAwayBinding("Navigation", "G", "cursor_bottom", "Cursor bottom"),
+        TaskAwayBinding("Navigation", "g", "cursor_top", "Cursor top"),
+        TaskAwayBinding("Navigation", "j", "cursor_down", "Cursor down"),
+        TaskAwayBinding("Navigation", "k", "cursor_up", "Cursor up"),
+        TaskAwayBinding("Task", "A", "add_annotation", "Add annotation"),
+        TaskAwayBinding("Task", "a", "add_task", "Add task"),
+        TaskAwayBinding("Task", "b", "toggle_start_stop", "Toggle start stop"),
+        TaskAwayBinding("Task", "d", "mark_task_complete", "Mark task complete"),
+        TaskAwayBinding("Task", "e", "edit_task", "Edit task"),
+        TaskAwayBinding("Task", "m", "modify_task", "Modify task"),
+        TaskAwayBinding("Task", "p", "modify_project", "Modify project"),
+        TaskAwayBinding("Task", "t", "add_tag", "Add tag to task"),
+        TaskAwayBinding("View", "P", "filter_project", "Filter for highlighted project"),
+        TaskAwayBinding("View", "T", "filter_tag", "Filter for highlighted tags"),
+        TaskAwayBinding("View", "escape", "clear_filters", "Clear filters"),
     ]
 
     def __init__(self, task_config: Path, taskaway_config: Path, task_command: str) -> None:
-        """Initialize the main window.
-
-        Args:
-            task_config: Path to the TaskWarrior config file
-            taskaway_config: Path to the TaskAway config file
-            task_command: Command to run TaskWarrior
-        """
         self.tw = TaskWarrior(task_command=task_command, taskrc_location=task_config)
         self.taskaway_config: Path = taskaway_config
         self.config: Config = Config.load_from_json(taskaway_config=self.taskaway_config)
@@ -169,42 +180,27 @@ class MainWindow(App):
         super().__init__()
 
     def get_table(self) -> DataTable:
-        """Get the main data table widget."""
         return self.query_one(f"#{TASK_TABLE_ID}")
 
     def update_project_filter(self, project_filter: str) -> None:
-        """Update the project filter.
-
-        Args:
-            project_filter: The project filter string to apply
-        """
         self.project_filter = project_filter.strip()
 
     def update_tag_filter(self, tag_filter: str) -> None:
-        """Update the tag filter.
-
-        Args:
-            tag_filter: Comma-separated list of tags to filter by
-        """
         self.tag_filter: list[str] = [x for x in tag_filter.split(",") if x]
 
     def compose(self) -> ComposeResult:
-        """Compose the initial UI elements."""
         self.expanded_projects: set[str] = set([""])
         yield DataTable(id=TASK_TABLE_ID)
 
     def on_mount(self) -> None:
-        """Set up the application when mounted."""
         self.theme = self.config.theme
         self.redraw()
         self.update_timer = self.set_interval(1.0, self.redraw_if_focused)
 
     def key_b(self) -> None:
-        """Handle the 'b' key press."""
         self.update_timer.pause()
 
     def is_project_row_highlighted(self) -> bool:
-        """Check if the currently highlighted row is a project row."""
         table = self.get_table()
         try:
             row = table.get_row_at(table.cursor_row)
@@ -215,7 +211,6 @@ class MainWindow(App):
         return row[uuid_column_idx] is None
 
     def is_task_row_highlighted(self) -> bool:
-        """Check if the currently highlighted row is a task row."""
         table = self.get_table()
         try:
             row = table.get_row_at(table.cursor_row)
@@ -226,7 +221,6 @@ class MainWindow(App):
         return row[uuid_column_idx] is not None
 
     def get_highlighted_row_full_project(self) -> Optional[str]:
-        """Get the full project name of the highlighted row."""
         table = self.get_table()
         try:
             row = table.get_row_at(table.cursor_row)
@@ -236,7 +230,6 @@ class MainWindow(App):
             return None
 
     def get_highlighted_row_key(self) -> Optional[RowKey]:
-        """Get the row key of the highlighted row."""
         table = self.get_table()
         try:
             row_key, _ = table.coordinate_to_cell_key(table.cursor_coordinate)
@@ -245,10 +238,6 @@ class MainWindow(App):
             return None
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
-        """Handle row selection in the data table.
-
-        This method handles expanding/collapsing project rows when selected.
-        """
         table = self.get_table()
         row = table.get_row_at(table.cursor_row)
 
@@ -270,34 +259,28 @@ class MainWindow(App):
         self.call_after_refresh(self.redraw)
 
     def action_clear_filters(self) -> None:
-        """Clear all active filters."""
         self.update_project_filter("")
         self.update_tag_filter(tag_filter="")
         self.call_after_refresh(self.redraw)
 
     def action_cursor_up(self) -> None:
-        """Move cursor up one row."""
         table = self.get_table()
         table.action_cursor_up()
 
     def action_cursor_down(self) -> None:
-        """Move cursor down one row."""
         table = self.get_table()
         table.action_cursor_down()
 
     def action_cursor_top(self) -> None:
-        """Move cursor to the top of the table."""
         table = self.get_table()
         table.action_scroll_top()
 
     def action_cursor_bottom(self) -> None:
-        """Move cursor to the bottom of the table."""
         table = self.get_table()
         table.action_scroll_bottom()
 
     @work
     async def action_configure_column_layout(self) -> None:
-        """Configure the column layout of the table."""
         column_layout = await self.push_screen_wait(ColumnLayoutScreen(self.config.column_layout))
         self.config.column_layout = column_layout
         self.config.save_to_json()
@@ -305,7 +288,6 @@ class MainWindow(App):
 
     @work
     async def action_mark_task_complete(self) -> None:
-        """Mark the currently selected task as complete."""
         if not self.is_task_row_highlighted():
             return
 
@@ -325,7 +307,6 @@ class MainWindow(App):
 
     @work
     async def action_add_tag(self) -> None:
-        """Add tags to the currently selected task."""
         if not self.is_task_row_highlighted():
             return
 
@@ -345,7 +326,6 @@ class MainWindow(App):
 
     @work
     async def action_modify_project(self) -> None:
-        """Modify the project of the currently selected task."""
         if not self.is_task_row_highlighted():
             return
 
@@ -370,7 +350,6 @@ class MainWindow(App):
 
     @work
     async def action_modify_task(self) -> None:
-        """Modify the currently selected task."""
         if not self.is_task_row_highlighted():
             return
 
@@ -390,7 +369,6 @@ class MainWindow(App):
 
     @work
     async def action_add_task(self) -> None:
-        """Add a new task."""
         highlighted_project: Optional[str] = self.get_highlighted_row_full_project()
         default_project: str = f"project:{highlighted_project} " if highlighted_project is not None else ""
 
@@ -408,7 +386,6 @@ class MainWindow(App):
 
     @work
     async def action_add_annotation(self) -> None:
-        """Add an annotation to the currently selected task."""
         if not self.is_task_row_highlighted():
             return
 
@@ -428,7 +405,6 @@ class MainWindow(App):
 
     @work
     async def action_edit_task(self) -> None:
-        """Edit the currently selected task in the default editor."""
         if not self.is_task_row_highlighted():
             return
 
@@ -442,7 +418,6 @@ class MainWindow(App):
 
     @work
     async def action_toggle_start_stop(self) -> None:
-        """Toggle the start/stop state of the currently selected task."""
         if not self.is_task_row_highlighted():
             return
 
@@ -461,16 +436,13 @@ class MainWindow(App):
 
     @work
     async def action_toggle_help(self) -> None:
-        """Toggle the help panel visibility."""
         try:
-            self.query_one(HelpPanel)
-            self.screen.query("HelpPanel").remove()
+            await self.push_screen_wait(HelpScreen(self.BINDINGS))
         except NoMatches:
-            self.mount(HelpPanel())
+            pass
 
     @work
     async def action_filter_project(self) -> None:
-        """Filter tasks by the project of the currently selected task."""
         row_key = self.get_highlighted_row_key()
         if row_key is None:
             return
@@ -493,11 +465,11 @@ class MainWindow(App):
 
     @work
     async def action_filter_tag(self) -> None:
-        """Filter tasks by the tags of the currently selected task."""
         row_key = self.get_highlighted_row_key()
         if row_key is None:
             return
 
+        # Filter for tag
         table = self.get_table()
         row = table.get_row_at(table.cursor_row)
 
@@ -512,13 +484,11 @@ class MainWindow(App):
 
     @work
     async def action_quit(self) -> None:
-        """Quit the application."""
         if not await self.push_screen_wait(ConfirmationScreen(confirmation_question="Quit?")):
             return
         self.exit()
 
     def watch_theme(self) -> None:
-        """Watch for theme changes and save them to config."""
         if self.config.theme == self.theme:
             return
 
@@ -526,18 +496,9 @@ class MainWindow(App):
         self.config.save_to_json()
 
     def action_change_theme(self) -> None:
-        """Change the application theme."""
         self.search_themes()
 
     def convert_project(self, project: str) -> str:
-        """Convert a project string to its display format.
-
-        Args:
-            project: The project string to convert
-
-        Returns:
-            The formatted project string with appropriate indentation and icons
-        """
         if not project:
             return project
 
@@ -547,7 +508,6 @@ class MainWindow(App):
         return " " * (num_periods * 2) + base_project
 
     def redraw_if_focused(self) -> None:
-        """Redraw the table if it has focus."""
         try:
             table = self.get_table()
             if not table.has_focus:
@@ -557,7 +517,6 @@ class MainWindow(App):
             return
 
     def redraw_columns(self) -> None:
-        """Redraw the table columns based on the current configuration."""
         table = self.get_table()
         columns = [column.value for column in table.columns]
         for column in columns:
@@ -580,7 +539,6 @@ class MainWindow(App):
             table.add_column(header, key=header, width=width)
 
     def redraw(self) -> None:
-        """Redraw the entire table with current filters and expanded projects."""
         self.redraw_columns()
         table = self.get_table()
         row_key = self.get_highlighted_row_key()
@@ -650,14 +608,6 @@ class MainWindow(App):
             table.add_row(*data, key=key)
 
         def sort_by_project_then_description(row_data):
-            """Sort rows by project and description.
-
-            Args:
-                row_data: Tuple containing (active, project, description)
-
-            Returns:
-                Tuple for sorting
-            """
             active, project, description = row_data
             return (active if active else 999999999999, project if project else "", description if description else "")
 
@@ -672,7 +622,6 @@ class MainWindow(App):
 
 
 def start_application() -> None:
-    """Start the TaskAway application with command line arguments."""
     parser = argparse.ArgumentParser(
         prog="taskaway",
         description="terminal user interface for task warrior",
@@ -687,8 +636,8 @@ def start_application() -> None:
     task_command: str = args.task_command
     if shutil.which(task_command) is None:
         print(
-            "The task command '{task_command}' does not exist. "
-            "Install task warrior following https://taskwarrior.org/download/#quick-setup."
+            f"The task command '{task_command}' does not exist. "
+            f"Install task warrior following https://taskwarrior.org/download/#quick-setup."
         )
         exit(1)
 

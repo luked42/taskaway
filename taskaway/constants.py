@@ -1,5 +1,6 @@
 # Element ID's
 TASK_TABLE_ID = "task_table"
+HELP_TABLE_ID = "help_table"
 
 # Table column ID's
 COL_SHORT_PROJECT: str = "project"

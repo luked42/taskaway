@@ -21,7 +21,7 @@ class ColumnLayoutScreen(ModalScreen):
 
     def compose(self) -> ComposeResult:
         yield SelectionList[int]()
-        yield Label("\[j/k]:down/up \[enter]:select \[m]:toggle move \[esc]:save")
+        yield Label(r"\[j/k]:down/up \[enter]:select \[m]:toggle move \[esc]:save")
 
     def on_mount(self) -> None:
         self.move_mode = False

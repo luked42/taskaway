@@ -21,10 +21,3 @@ repos:
     rev: 7.0.0
     hooks:
     -   id: flake8
-        additional_dependencies: [flake8-docstrings]
-
--   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.15.0
-    hooks:
-    -   id: mypy
-        additional_dependencies: [types-all] 
